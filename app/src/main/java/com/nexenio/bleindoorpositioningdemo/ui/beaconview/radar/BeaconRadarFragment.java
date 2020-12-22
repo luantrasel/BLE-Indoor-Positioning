@@ -7,10 +7,11 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import androidx.annotation.CallSuper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.annotation.CallSuper;
 
 import com.nexenio.bleindoorpositioning.IndoorPositioning;
 import com.nexenio.bleindoorpositioning.ble.beacon.Beacon;
@@ -35,7 +36,7 @@ public class BeaconRadarFragment extends BeaconViewFragment {
 
     public BeaconRadarFragment() {
         super();
-        beaconFilters.add(uuidFilter);
+//        beaconFilters.add(uuidFilter);
 
         sensorEventListener = new SensorEventListener() {
             @Override

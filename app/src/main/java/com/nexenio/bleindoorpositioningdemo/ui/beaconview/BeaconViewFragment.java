@@ -1,12 +1,15 @@
 package com.nexenio.bleindoorpositioningdemo.ui.beaconview;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.annotation.CallSuper;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
+
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -14,15 +17,22 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.nexenio.bleindoorpositioning.ActiveFilter;
+import com.nexenio.bleindoorpositioning.FilterActivity;
 import com.nexenio.bleindoorpositioning.IndoorPositioning;
 import com.nexenio.bleindoorpositioning.ble.advertising.IndoorPositioningAdvertisingPacket;
 import com.nexenio.bleindoorpositioning.ble.beacon.Beacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconManager;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconUpdateListener;
+import com.nexenio.bleindoorpositioning.ble.beacon.Eddystone;
+import com.nexenio.bleindoorpositioning.ble.beacon.IBeacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.filter.BeaconFilter;
+import com.nexenio.bleindoorpositioning.ble.beacon.filter.GenericBeaconFilter;
 import com.nexenio.bleindoorpositioning.ble.beacon.filter.IBeaconFilter;
 import com.nexenio.bleindoorpositioning.location.LocationListener;
 import com.nexenio.bleindoorpositioningdemo.R;
+import com.nexenio.bleindoorpositioningdemo.database.FilterModelDAO;
+import com.nexenio.bleindoorpositioningdemo.database.SqliteDbHelper;
 import com.nexenio.bleindoorpositioningdemo.location.AndroidLocationProvider;
 
 import java.util.ArrayList;
@@ -30,11 +40,12 @@ import java.util.List;
 import java.util.UUID;
 
 public abstract class BeaconViewFragment extends Fragment {
-
+    protected SqliteDbHelper db;
     protected BeaconManager beaconManager = BeaconManager.getInstance();
     protected LocationListener deviceLocationListener;
     protected BeaconUpdateListener beaconUpdateListener;
-    protected List<BeaconFilter> beaconFilters = new ArrayList<>();
+    //    protected List<BeaconFilter> beaconFilters = new ArrayList<>();
+    protected List<BeaconFilter> beaconFilters = ActiveFilter.getInstance().beaconFilters;
 
     // TODO: Remove legacy uuid once all beacons are updated
     // protected IBeaconFilter uuidFilter = new IBeaconFilter(IndoorPositioningAdvertisingPacket.INDOOR_POSITIONING_UUID);
@@ -61,6 +72,7 @@ public abstract class BeaconViewFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        db = new SqliteDbHelper(this.getContext());
     }
 
     @CallSuper
@@ -71,11 +83,17 @@ public abstract class BeaconViewFragment extends Fragment {
         return inflatedView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        ActiveFilter.getInstance().updateFilters(new FilterModelDAO(db).getFilters());
+    }
+
     @CallSuper
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        IndoorPositioning.getInstance().setIndoorPositioningBeaconFilter(uuidFilter);
+//        IndoorPositioning.getInstance().setIndoorPositioningBeaconFilter(uuidFilter);
         IndoorPositioning.registerLocationListener(deviceLocationListener);
         AndroidLocationProvider.registerLocationListener(deviceLocationListener);
         AndroidLocationProvider.requestLastKnownLocation();
@@ -100,6 +118,9 @@ public abstract class BeaconViewFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.menu_filter:
+                startActivity(new Intent(this.getActivity(), FilterActivity.class));
+                break;
             case R.id.menu_color_by_instance: {
                 onColoringModeSelected(ColorUtil.COLORING_MODE_INSTANCES, item);
                 return true;
@@ -116,9 +137,9 @@ public abstract class BeaconViewFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    public IBeaconFilter getUuidFilter() {
-        return uuidFilter;
-    }
+//    public IBeaconFilter getUuidFilter() {
+//        return uuidFilter;
+//    }
 
     protected void onColoringModeSelected(@ColorUtil.ColoringMode int coloringMode, MenuItem menuItem) {
         menuItem.setChecked(true);
@@ -130,6 +151,7 @@ public abstract class BeaconViewFragment extends Fragment {
             return new ArrayList<>(beaconManager.getBeaconMap().values());
         }
         List<Beacon> beacons = new ArrayList<>();
+        System.out.println("beacons length:" + beacons.size() + ", beaconFilter length: " + beaconFilters.size());
         for (Beacon beacon : beaconManager.getBeaconMap().values()) {
             for (BeaconFilter beaconFilter : beaconFilters) {
                 if (beaconFilter.matches(beacon)) {
@@ -141,7 +163,7 @@ public abstract class BeaconViewFragment extends Fragment {
         return beacons;
     }
 
-    public void setUuidFilter(IBeaconFilter uuidFilter) {
-        this.uuidFilter = uuidFilter;
-    }
+//    public void setUuidFilter(IBeaconFilter uuidFilter) {
+//        this.uuidFilter = uuidFilter;
+//    }
 }
